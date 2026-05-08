@@ -156,20 +156,31 @@ export async function applyMaskToBlob(img: AnnotationImage): Promise<Blob> {
 }
 
 // ─── Hex annotation utilities ─────────────────────────────────────────────────
+//
+// STORAGE CONVENTION: visual left-to-right order.
+//   U+1031 ေ is stored BEFORE its consonant: e.g. ကေ → 1031 1000.
+//   This matches the agreed annotation format for this project.
+//
+// DISPLAY CONVENTION: for rendering in the preview, 1031 must appear AFTER
+//   its consonant so Unicode-compliant fonts render correctly.
+//   hexToUnicode() performs this swap for display only.
+//
+// TYPING ORDER: users type left-to-right visually.
+//   - Type ေ (1031) then က (1000) → stored 1031 1000 ✓
+//   - Type က (1000) then ေ (1031) → stored 1031 1000 ✓ (swapped on append)
+//   - Type ေ က ျ ာ ် → stored 1031 1000 103B 102C 103A ✓
+//     (ျ and ာ typed after ေ+က are inserted before the trailing 1031)
+//
+// BACKSPACE removes the last stored codepoint (visual-order last).
 
-/** U+1031 ေ is the only pre-posed (visually left-of-consonant) vowel sign in
- *  standard Unicode Myanmar. When the user types it first (visual order), it
- *  must be moved after the preceding base consonant + medials in storage order.
- *
- *  Rule: after appending 1031 to the pending syllable cluster, if the cluster
- *  already contains a base consonant (U+1000–U+1021), move 1031 to immediately
- *  after the last medial (or the base consonant if no medials), i.e. after all
- *  of: base, 1039+consonant stacks, 103B–103E medials. */
 const PRE_VOWEL = 0x1031;
-
-// Characters that form part of the consonant + medial cluster BEFORE 1031
 const BASE_CONSONANT_RANGE: [number, number] = [0x1000, 0x1021];
-const MEDIALS = new Set([0x103B, 0x103C, 0x103D, 0x103E, 0x1039]);
+// Medials that visually attach to a consonant and sit between it and ေ
+const MEDIALS = new Set([0x103B, 0x103C, 0x103D, 0x103E]);
+
+function isBase(cp: number): boolean {
+  return cp >= BASE_CONSONANT_RANGE[0] && cp <= BASE_CONSONANT_RANGE[1];
+}
 
 /** Parse a hex annotation string into an array of codepoint numbers. */
 export function hexToCodepoints(hex: string): number[] {
@@ -181,60 +192,99 @@ export function codepointsToHex(cps: number[]): string {
   return cps.map(cp => cp.toString(16).toUpperCase().padStart(4, "0")).join(" ");
 }
 
-/** Convert a hex annotation string to the rendered Unicode string (for display). */
+/** Convert a hex annotation string to the rendered Unicode string.
+ *  Performs display-only reordering: wherever the stored sequence is
+ *  1031 <consonant> [medials], swap to <consonant> [medials] 1031 so
+ *  Unicode-compliant renderers display ေ correctly to the left. */
 export function hexToUnicode(hex: string): string {
   const cps = hexToCodepoints(hex);
-  return cps.map(cp => String.fromCodePoint(cp)).join("");
+  const out: number[] = [];
+  const ZWSP = 0x200B; // zero-width space — acts as syllable boundary for shaping
+  let i = 0;
+  while (i < cps.length) {
+    if (cps[i] === PRE_VOWEL) {
+      i++; // skip stored 1031
+      const cluster: number[] = [];
+      if (i < cps.length && isBase(cps[i])) {
+        cluster.push(cps[i++]);
+        while (i < cps.length && MEDIALS.has(cps[i])) {
+          cluster.push(cps[i++]);
+        }
+      }
+      if (cluster.length === 0) {
+        // Bare ေ with no consonant host — insert ZWSP before it so the
+        // renderer does not attach it to the preceding cluster visually.
+        if (out.length > 0) out.push(ZWSP);
+      }
+      out.push(...cluster, PRE_VOWEL);
+    } else {
+      out.push(cps[i++]);
+    }
+  }
+  return out.map(cp => String.fromCodePoint(cp)).join("");
 }
 
-/** Apply visual-to-logical reordering to a codepoint array.
- *  When U+1031 (ေ) is appended and a base consonant already precedes it in
- *  the current cluster, move 1031 to after the base + all medials.
- *  All other characters are stored in the order they are typed. */
-export function reorderForStorage(codepoints: number[]): number[] {
-  if (codepoints.length === 0) return [];
-
-  const last = codepoints[codepoints.length - 1];
-  if (last !== PRE_VOWEL) return codepoints; // no reorder needed
-
-  // Find the start of the current syllable cluster: scan backwards from
-  // second-to-last until we hit a character that is not a base consonant,
-  // medial, stacking sign, or previous diacritic (i.e. a syllable boundary).
-  // For our purposes we find the last base consonant index.
-  const prev = codepoints.slice(0, -1);
-  let baseIdx = -1;
-  for (let i = prev.length - 1; i >= 0; i--) {
-    const cp = prev[i];
-    const isBase = cp >= BASE_CONSONANT_RANGE[0] && cp <= BASE_CONSONANT_RANGE[1];
-    const isMedial = MEDIALS.has(cp);
-    if (isBase) { baseIdx = i; break; }
-    if (!isMedial) break; // hit something that is not a medial — stop
+/** Append one codepoint to the stored codepoint array in visual order.
+ *
+ *  Rules for 1031 (ေ):
+ *   A. New char is 1031, last stored is a base consonant:
+ *      — ေ goes BEFORE the consonant in storage (visual order).
+ *        Find the consonant's position, insert 1031 before it.
+ *        e.g. [1000] + 1031 → [1031, 1000]
+ *
+ *   B. New char is 1031, last stored is a medial whose consonant precedes it:
+ *      — Medials sit after their consonant but before ေ visually.
+ *        Insert 1031 before the run of medials (and their consonant).
+ *        e.g. [1031, 1000, 103B] + 1031 (second syllable) → not this case;
+ *             [1000, 103B] + 1031 → [1031, 1000, 103B]
+ *        Concretely: walk back past medials to find base, insert before base.
+ *
+ *   C. New char is a base consonant or medial, last stored is 1031:
+ *      — User typed ေ first; consonant/medial goes AFTER 1031 (stays in place).
+ *        e.g. [1031] + 1000 → [1031, 1000]  ✓ already correct storage order.
+ *        No special action needed — just append.
+ *
+ *   D. New char is a medial, and the sequence ends with [1031, consonant]:
+ *      — Medial belongs after the consonant but before ေ visually,
+ *        but in our storage convention ေ is already before the consonant.
+ *        Insert medial after the consonant (i.e. append — it is already last).
+ *        e.g. [1031, 1000] + 103B → [1031, 1000, 103B]  ✓ append as-is.
+ *
+ *   E. All other characters: append as-is. */
+function appendWithReorder(cps: number[], newCp: number): number[] {
+  // Rule A/B: appending 1031, look back for a consonant to place it before.
+  // Extra condition: only claim that consonant if it is NOT already preceded
+  // by a 1031 in storage. If it is, the consonant belongs to a previous ေ
+  // and the new 1031 starts a fresh syllable — append at the end.
+  if (newCp === PRE_VOWEL) {
+    let insertBefore = -1;
+    for (let i = cps.length - 1; i >= 0; i--) {
+      if (MEDIALS.has(cps[i])) continue;
+      if (isBase(cps[i])) insertBefore = i;
+      break;
+    }
+    if (insertBefore >= 0) {
+      // The consonant at insertBefore is already owned by a previous 1031 if
+      // cps[insertBefore - 1] === PRE_VOWEL. In that case do not move this
+      // new 1031 before it — append at the end instead.
+      const alreadyOwned = insertBefore > 0 && cps[insertBefore - 1] === PRE_VOWEL;
+      if (!alreadyOwned) {
+        return [...cps.slice(0, insertBefore), PRE_VOWEL, ...cps.slice(insertBefore)];
+      }
+    }
+    // No unclaimed consonant found — append at end (consonant may follow next)
+    return [...cps, PRE_VOWEL];
   }
 
-  if (baseIdx < 0) return codepoints; // no base consonant found — leave as typed
-
-  // Find insertion point: after base consonant + all following medials/stacks
-  let insertAfter = baseIdx;
-  for (let i = baseIdx + 1; i < prev.length; i++) {
-    if (MEDIALS.has(prev[i])) insertAfter = i;
-    else break;
-  }
-
-  // Rebuild: everything up to and including insertAfter, then 1031, then rest
-  const result = [
-    ...prev.slice(0, insertAfter + 1),
-    PRE_VOWEL,
-    ...prev.slice(insertAfter + 1),
-  ];
-  return result;
+  // Rules C/D/E: all other characters append as-is.
+  return [...cps, newCp];
 }
 
-/** Append one codepoint (from on-screen keyboard) to an existing hex annotation,
- *  applying visual-to-logical reordering, and return the new hex string. */
+/** Append one codepoint (from on-screen keyboard) to an existing hex annotation
+ *  and return the new hex string. */
 export function appendCodepoint(currentHex: string, newCp: number): string {
   const cps = hexToCodepoints(currentHex);
-  const reordered = reorderForStorage([...cps, newCp]);
-  return codepointsToHex(reordered);
+  return codepointsToHex(appendWithReorder(cps, newCp));
 }
 
 /** Remove the last codepoint from a hex annotation string. */

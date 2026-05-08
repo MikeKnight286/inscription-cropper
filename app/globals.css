@@ -1124,7 +1124,7 @@ input:focus, select:focus { border-color: var(--accent); }
   display: flex;
   flex-direction: column;
   min-height: 0;
-  overflow: hidden;
+  overflow: hidden;    /* clip horizontally; children scroll vertically */
 }
 
 /* ── Annotation panel ────────────────────────────────────────────────────── */
@@ -1143,6 +1143,7 @@ input:focus, select:focus { border-color: var(--accent); }
   gap: 0;
   border-bottom: 1px solid var(--line);
   flex-shrink: 0;
+  overflow: hidden;    /* panel itself does not scroll — keyboard scrolls */
 }
 
 .an-annot-header {
@@ -1221,11 +1222,13 @@ input:focus, select:focus { border-color: var(--accent); }
 .bk-wrap {
   background: var(--bg-elev);
   border-top: 1px solid var(--line);
-  padding: 8px 10px;
+  padding: 0 10px 8px; /* no top padding — del bar provides top spacing */
   display: flex;
   flex-direction: column;
   gap: 4px;
-  flex-shrink: 0;
+  flex-shrink: 1;
+  overflow-y: auto;
+  max-height: 320px;
 }
 
 .bk-header {
@@ -1273,20 +1276,30 @@ input:focus, select:focus { border-color: var(--accent); }
 
 .bk-key:active { background: rgba(233, 196, 106, 0.12); }
 
-.bk-util-row { margin-top: 2px; }
-
-.bk-space {
-  flex: 1;
-  font-size: 10px;
-  font-family: var(--mono);
-  letter-spacing: 0.04em;
-  color: var(--fg-dim);
+.bk-del-bar {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--bg-elev);
+  border-bottom: 1px solid var(--line);
+  padding: 6px 10px 6px 10px;
+  margin: 0 -10px 6px; /* bleed left/right to bk-wrap padding edges */
+  display: flex;
+  justify-content: flex-end;
 }
 
 .bk-backspace {
-  width: 48px;
-  font-size: 14px;
+  font-size: 11px;
+  font-family: var(--mono);
+  padding: 3px 10px;
   color: var(--fg-dim);
+  letter-spacing: 0.04em;
+  border-color: var(--line);
+}
+
+.bk-backspace:hover {
+  color: var(--accent-hot);
+  border-color: var(--accent-hot);
 }
 
 /* ── Review panel ─────────────────────────────────────────────────────────── */
@@ -1296,7 +1309,8 @@ input:focus, select:focus { border-color: var(--accent); }
   display: flex;
   flex-direction: column;
   min-height: 0;
-  overflow: hidden;
+  overflow: hidden;   /* clip horizontally */
+  min-height: 80px;   /* always show at least a sliver of review */
 }
 
 .an-review-header {
