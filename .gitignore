@@ -1,0 +1,103 @@
+# ── Dependencies ─────────────────────────────────────────────────────────────
+node_modules/
+.pnp
+.pnp.js
+.yarn/install-state.gz
+
+# ── Next.js build output ──────────────────────────────────────────────────────
+.next/
+out/
+
+# ── Production build ──────────────────────────────────────────────────────────
+build/
+dist/
+
+# ── Environment variables ─────────────────────────────────────────────────────
+# Keep .env.example in version control; never commit real secrets
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# ── TypeScript ────────────────────────────────────────────────────────────────
+*.tsbuildinfo
+next-env.d.ts
+
+# ── Testing ───────────────────────────────────────────────────────────────────
+coverage/
+.nyc_output/
+
+# ── OS artefacts ─────────────────────────────────────────────────────────────
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# ── Editor / IDE ──────────────────────────────────────────────────────────────
+.vscode/
+!.vscode/extensions.json
+!.vscode/settings.json
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+*.swp
+*~
+
+# ── Package manager locks (keep ONE, ignore the rest) ────────────────────────
+# This project uses npm — keep package-lock.json, ignore others
+yarn.lock
+pnpm-lock.yaml
+bun.lockb
+
+# ── Debug / logs ──────────────────────────────────────────────────────────────
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+*.log
+
+# ── Vercel / deployment ───────────────────────────────────────────────────────
+.vercel/
+
+# ── Local data — inscription images and annotation exports ───────────────────
+# Uncomment whichever lines apply to your working data layout.
+# Raw inscription scans are large and should not be committed.
+# data/raw/
+# data/processed/
+# exports/
+# crops_*.zip
+# annotated_*.zip
+# annotations_*.json
+
+# ── Python pipeline artefacts (normalize_image.py, segment_lines.py) ─────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+.Python
+.venv/
+venv/
+env/
+*.egg-info/
+dist/
+.eggs/
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# ── Misc ──────────────────────────────────────────────────────────────────────
+*.pem
+.cache/
+tmp/
+temp/
+001-A-1-35/
+001-A-36-60/
