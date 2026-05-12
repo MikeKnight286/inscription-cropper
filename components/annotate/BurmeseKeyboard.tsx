@@ -50,7 +50,7 @@ const SECTIONS: Section[] = [
   {
     label: "dependent vowel signs (type after consonant)",
     keys: [
-      ["ာ","ိ","ီ","ု","ူ","ဲ","ဳ","ဴ","ဵ","ံ","့","း"].map(k),
+      ["ါ","ာ","ိ","ီ","ု","ူ","ဲ","ဳ","ဴ","ဵ","ံ","့","း"].map(k),
     ],
   },
   {
@@ -84,6 +84,16 @@ interface Props {
 export default function BurmeseKeyboard({ onCodepoint, onBackspace }: Props) {
   return (
     <div className="bk-wrap">
+      {/* Delete button fixed at the top — always visible without scrolling */}
+      <div className="bk-del-bar">
+        <button
+          className="bk-key bk-backspace"
+          onMouseDown={e => { e.preventDefault(); onBackspace(); }}
+          title="Delete last code point"
+        >
+          ⌫ del
+        </button>
+      </div>
       {SECTIONS.map((sec, si) => (
         <div key={si} className="bk-section">
           <div className="bk-section-label">{sec.label}</div>
@@ -111,15 +121,6 @@ export default function BurmeseKeyboard({ onCodepoint, onBackspace }: Props) {
         </div>
       ))}
 
-      <div className="bk-row bk-util-row">
-        <button
-          className="bk-key bk-backspace"
-          onMouseDown={e => { e.preventDefault(); onBackspace(); }}
-          title="Delete last code point"
-        >
-          ⌫ del
-        </button>
-      </div>
     </div>
   );
 }

@@ -222,6 +222,7 @@ export default function Home() {
           <span className="brand-mark">▭</span>
           <span className="brand-name">Inscription Cropper</span>
           <a href="/annotate" className="brand-nav-link" title="Go to annotation tool">annotate →</a>
+          <a href="/counter" className="brand-nav-link" title="Go to counter">counter →</a>
         </div>
         <div className="header-controls">
           {pages.length > 0 && (

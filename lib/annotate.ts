@@ -73,9 +73,14 @@ function renderSegmentCanvas(
   return canvas;
 }
 
+/** Global monotonic segment counter — increments across all segmentation
+ *  calls so each segment gets a unique numeric suffix regardless of how many
+ *  times the same parent is re-segmented. */
+let _segCounter = 0;
+
 /** Slice a bitmap at the given x-positions (in DISPLAY pixels) and return
  *  new AnnotationImage entries normalised to SEGMENT_SIZE × SEGMENT_SIZE,
- *  each labelled <parentLabel>_a, _b, _c … */
+ *  each labelled <parentLabel>_NNN with a globally unique number. */
 export async function segmentBitmap(
   parent: AnnotationImage,
   cutXs: number[],     // sorted ascending, in display pixels
@@ -89,7 +94,6 @@ export async function segmentBitmap(
     .sort((a, b) => a - b)
     .filter((v, i, arr) => i === 0 || v !== arr[i - 1]);
 
-  const suffixes = "abcdefghijklmnopqrstuvwxyz";
   const segments: AnnotationImage[] = [];
 
   for (let i = 0; i < cuts.length - 1; i++) {
@@ -104,7 +108,8 @@ export async function segmentBitmap(
     );
     const objectUrl  = URL.createObjectURL(blob);
     const segBitmap  = await createImageBitmap(blob);
-    const suffix     = i < suffixes.length ? `_${suffixes[i]}` : `_${i}`;
+    _segCounter += 1;
+    const suffix     = `_${String(_segCounter).padStart(3, "0")}`;
 
     segments.push({
       id: `img_${uid()}`,
@@ -174,9 +179,13 @@ export async function applyMaskToBlob(img: AnnotationImage): Promise<Blob> {
 // BACKSPACE removes the last stored codepoint (visual-order last).
 
 const PRE_VOWEL = 0x1031;
-const BASE_CONSONANT_RANGE: [number, number] = [0x1000, 0x1021];
+const BASE_CONSONANT_RANGE: [number, number] = [0x1000, 0x102A];
+// Range covers U+1000–U+102A: all consonants (1000–1021) and
+// independent vowels (1022–102A: ဣ ဤ ဥ ဦ ဧ ဨ ဩ ဪ). Both can
+// appear as the head of a cluster with a 1039 stacking sign.
 // Medials that visually attach to a consonant and sit between it and ေ
 const MEDIALS = new Set([0x103B, 0x103C, 0x103D, 0x103E]);
+const STACK_SIGN = 0x1039; // stacking sign — precedes a stacked consonant
 
 function isBase(cp: number): boolean {
   return cp >= BASE_CONSONANT_RANGE[0] && cp <= BASE_CONSONANT_RANGE[1];
@@ -207,8 +216,18 @@ export function hexToUnicode(hex: string): string {
       const cluster: number[] = [];
       if (i < cps.length && isBase(cps[i])) {
         cluster.push(cps[i++]);
-        while (i < cps.length && MEDIALS.has(cps[i])) {
-          cluster.push(cps[i++]);
+        // Consume medials (103B–103E) and stacking pairs (1039 + consonant)
+        // that belong to this cluster before placing 1031 after them.
+        let consuming = true;
+        while (consuming && i < cps.length) {
+          if (MEDIALS.has(cps[i])) {
+            cluster.push(cps[i++]);
+          } else if (cps[i] === STACK_SIGN && i + 1 < cps.length) {
+            cluster.push(cps[i++]); // 1039
+            cluster.push(cps[i++]); // stacked consonant or independent vowel
+          } else {
+            consuming = false;
+          }
         }
       }
       if (cluster.length === 0) {
@@ -252,31 +271,37 @@ export function hexToUnicode(hex: string): string {
  *
  *   E. All other characters: append as-is. */
 function appendWithReorder(cps: number[], newCp: number): number[] {
-  // Rule A/B: appending 1031, look back for a consonant to place it before.
-  // Extra condition: only claim that consonant if it is NOT already preceded
-  // by a 1031 in storage. If it is, the consonant belongs to a previous ေ
-  // and the new 1031 starts a fresh syllable — append at the end.
+  // Rule A/B: appending 1031 — find the base consonant of the current cluster
+  // to insert 1031 before it (visual-order storage: 1031 precedes consonant).
+  // Walk back past medials AND stacking pairs (1039 + consonant) to reach the
+  // true base consonant. Only insert if that consonant is not already owned
+  // by a preceding 1031.
   if (newCp === PRE_VOWEL) {
     let insertBefore = -1;
-    for (let i = cps.length - 1; i >= 0; i--) {
-      if (MEDIALS.has(cps[i])) continue;
-      if (isBase(cps[i])) insertBefore = i;
-      break;
+    let i = cps.length - 1;
+    while (i >= 0) {
+      if (MEDIALS.has(cps[i])) {
+        i--; continue;
+      }
+      // Stacking pair: [base, 1039, stacked] — skip stacked consonant and 1039
+      // Skip stacking pairs (1039 + any codepoint) when walking back
+      if (i >= 2 && cps[i - 1] === STACK_SIGN) {
+        i -= 2; // skip stacked element and 1039, keep looking
+        continue;
+      }
+      if (isBase(cps[i])) { insertBefore = i; break; }
+      break; // hit something unrelated — stop
     }
     if (insertBefore >= 0) {
-      // The consonant at insertBefore is already owned by a previous 1031 if
-      // cps[insertBefore - 1] === PRE_VOWEL. In that case do not move this
-      // new 1031 before it — append at the end instead.
       const alreadyOwned = insertBefore > 0 && cps[insertBefore - 1] === PRE_VOWEL;
       if (!alreadyOwned) {
         return [...cps.slice(0, insertBefore), PRE_VOWEL, ...cps.slice(insertBefore)];
       }
     }
-    // No unclaimed consonant found — append at end (consonant may follow next)
     return [...cps, PRE_VOWEL];
   }
 
-  // Rules C/D/E: all other characters append as-is.
+  // All other characters: append as-is.
   return [...cps, newCp];
 }
 

@@ -208,6 +208,7 @@ export default function AnnotatePage() {
           <span className="an-brand-name">Annotation</span>
         </div>
         <div className="an-header-controls">
+          <a href="/counter" className="an-btn" style={{textDecoration:"none"}}>counter</a>
           <button className="an-btn" onClick={() => fileInputRef.current?.click()}>
             + images
           </button>
