@@ -188,7 +188,10 @@ const MEDIALS = new Set([0x103B, 0x103C, 0x103D, 0x103E]);
 const STACK_SIGN = 0x1039; // stacking sign — precedes a stacked consonant
 
 function isBase(cp: number): boolean {
-  return cp >= BASE_CONSONANT_RANGE[0] && cp <= BASE_CONSONANT_RANGE[1];
+  // U+1000–U+102A: consonants and independent vowels
+  // U+103F ဿ: great Sa — also acts as a syllable head
+  return (cp >= BASE_CONSONANT_RANGE[0] && cp <= BASE_CONSONANT_RANGE[1])
+    || cp === 0x103F;
 }
 
 /** Parse a hex annotation string into an array of codepoint numbers. */

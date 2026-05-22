@@ -22,7 +22,7 @@ export default function ImageGallery({ images }: Props) {
     <div className="ct-gallery">
       {images.map((img, i) => (
         <div key={i} className="ct-gallery-item">
-          <img src={img.objectUrl} alt={img.label} className="ct-gallery-img" />
+          <img src={img.objectUrl} alt={img.label} title={img.label} className="ct-gallery-img" />
           <span className="ct-gallery-label">{img.label}</span>
         </div>
       ))}
