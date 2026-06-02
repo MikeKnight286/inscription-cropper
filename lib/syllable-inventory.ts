@@ -488,3 +488,15 @@ export const SYLLABLE_INVENTORY: SyllableGroup[] = [
     patterns: [p("102A", "ဪ")],
   },
 ];
+// ─── Inventory query helpers ──────────────────────────────────────────────────
+
+/** Return a flat Set of all baseline pattern strings. */
+export function getInventoryPatternSet(): Set<string> {
+  const set = new Set<string>();
+  for (const group of SYLLABLE_INVENTORY) {
+    for (const pt of group.patterns) {
+      set.add(pt.pattern);
+    }
+  }
+  return set;
+}

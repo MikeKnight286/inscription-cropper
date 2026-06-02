@@ -2170,6 +2170,59 @@ input:focus, select:focus { border-color: var(--accent); }
   letter-spacing: 0.04em;
   font-variant-numeric: tabular-nums;
 }
+
+/* ── Export bar ──────────────────────────────────────────────────────────── */
+
+.ct-export-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 24px;
+  border-bottom: 1px solid var(--line);
+  background: var(--bg-canvas);
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+
+.ct-export-label {
+  font-size: 10px;
+  color: var(--fg-faint);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-right: 4px;
+  flex-shrink: 0;
+}
+
+.ct-export-btn {
+  font-size: 11px;
+  padding: 4px 12px;
+  letter-spacing: 0.04em;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--fg-dim);
+  cursor: pointer;
+  border-radius: 2px;
+  transition: border-color 100ms, color 100ms, background 100ms;
+  white-space: nowrap;
+}
+
+.ct-export-btn:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: rgba(233, 196, 106, 0.06);
+}
+
+.ct-export-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.ct-export-contrib-note {
+  font-size: 10px;
+  color: var(--accent);
+  letter-spacing: 0.04em;
+  margin-left: 4px;
+}
 /* ═══════════════════════════════════════════════════════════════════════════
    SYLLABLE TRACKER + TAB TOGGLE — append to globals.css
    ═══════════════════════════════════════════════════════════════════════════ */
