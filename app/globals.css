@@ -1024,6 +1024,14 @@ input:focus, select:focus { border-color: var(--accent); }
 .an-list-status { font-size: 10px; }
 .an-status-done { color: var(--accent-cool); }
 .an-status-empty { color: var(--fg-faint); }
+.an-status-count {
+  margin-left: 6px;
+  padding: 1px 5px;
+  border-radius: 999px;
+  background: rgba(233, 196, 106, 0.12);
+  color: var(--accent);
+  border: 1px solid rgba(233, 196, 106, 0.18);
+}
 
 .an-list-delete {
   padding: 0;
@@ -1305,6 +1313,13 @@ input:focus, select:focus { border-color: var(--accent); }
   font-size: 10px;
   color: var(--fg-faint);
   font-variant-numeric: tabular-nums;
+}
+
+.an-annot-occurrence {
+  font-size: 10px;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+  margin-left: 10px;
 }
 
 /* ── Burmese keyboard ─────────────────────────────────────────────────────── */
@@ -1590,6 +1605,61 @@ input:focus, select:focus { border-color: var(--accent); }
 }
 
 .an-brand-cropper-link:hover { color: var(--accent); }
+
+.an-json-upload {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.an-json-upload-popover {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 220px;
+  max-width: 320px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  background: rgba(10, 9, 8, 0.98);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-4px);
+  transition: opacity 120ms ease, transform 120ms ease;
+  z-index: 20;
+}
+
+.an-json-upload:hover .an-json-upload-popover,
+.an-json-upload:focus-within .an-json-upload-popover {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+}
+
+.an-json-upload-title {
+  font-size: 9px;
+  color: var(--fg-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 6px;
+}
+
+.an-json-upload-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 180px;
+  overflow: auto;
+}
+
+.an-json-upload-item {
+  font-size: 11px;
+  color: var(--fg);
+  word-break: break-word;
+}
 
 /* ── Hex annotation panel ─────────────────────────────────────────────────── */
 

@@ -13,9 +13,10 @@ import BurmeseKeyboard from "./BurmeseKeyboard";
 interface Props {
   image: AnnotationImage | null;
   onChange: (id: string, hex: string) => void;
+  annotationCount: number;
 }
 
-export default function AnnotationPanel({ image, onChange }: Props) {
+export default function AnnotationPanel({ image, onChange, annotationCount }: Props) {
   const [showKeyboard, setShowKeyboard] = useState(false);
 
   // Called by BurmeseKeyboard when a character key is pressed.
@@ -75,6 +76,9 @@ export default function AnnotationPanel({ image, onChange }: Props) {
 
       <div className="an-annot-meta">
         <span className="an-annot-charcount">{cpCount} code point{cpCount !== 1 ? "s" : ""}</span>
+        <span className="an-annot-occurrence">
+          {annotationCount} match{annotationCount !== 1 ? "es" : ""}
+        </span>
         {cpCount > 0 && (
           <button
             className="an-annot-clear"

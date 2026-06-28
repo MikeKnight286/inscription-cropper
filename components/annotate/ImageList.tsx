@@ -9,10 +9,11 @@ interface Props {
   onSelect: (id: string) => void;
   onDelete: (id: string) => void;
   onReorder: (fromIdx: number, toIdx: number) => void;
+  annotationCounts: Map<string, number>;
 }
 
 export default function ImageList({
-  images, selectedId, onSelect, onDelete, onReorder,
+  images, selectedId, onSelect, onDelete, onReorder, annotationCounts,
 }: Props) {
   const dragIdx = useRef<number | null>(null);
   const [dragOverIdx, setDragOverIdx] = useState<number | null>(null);
@@ -54,6 +55,9 @@ export default function ImageList({
         const isDragOver = dragOverIdx === i;
         const hasAnnotation = img.annotation.trim().length > 0;
         const hasChildren = images.some(m => m.parentId === img.id);
+        const annotationCount = hasAnnotation
+          ? (annotationCounts.get(img.annotation.trim()) ?? 0)
+          : 0;
 
         return (
           <li
@@ -87,7 +91,14 @@ export default function ImageList({
               </span>
               <span className="an-list-status">
                 {hasAnnotation
-                  ? <span className="an-status-done">✓ annotated</span>
+                  ? (
+                    <span className="an-status-done">
+                      ✓ annotated
+                      {annotationCount > 0 && (
+                        <span className="an-status-count">{annotationCount}</span>
+                      )}
+                    </span>
+                  )
                   : <span className="an-status-empty">— empty</span>}
               </span>
             </div>

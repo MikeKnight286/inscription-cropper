@@ -11,6 +11,13 @@ export interface AnnotationImage {
   isSegment: boolean;
 }
 
+export interface AnnotationRecord {
+  label: string;
+  annotation: string;
+  isSegment?: boolean;
+  parentId?: string | null;
+}
+
 function uid(): string {
   return `${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
 }
@@ -146,6 +153,30 @@ export function exportAnnotationsJson(images: AnnotationImage[]): Blob {
     parentId: img.parentId,
   }));
   return new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+}
+
+export async function readAnnotationRecords(file: File): Promise<AnnotationRecord[]> {
+  const text = await file.text();
+  const parsed = JSON.parse(text);
+  if (!Array.isArray(parsed)) {
+    throw new Error("annotations file must contain a JSON array");
+  }
+  return parsed
+    .map((entry): AnnotationRecord | null => {
+      if (!entry || typeof entry !== "object") return null;
+      const label = typeof entry.label === "string" ? entry.label : "";
+      const annotation = typeof entry.annotation === "string" ? entry.annotation : "";
+      if (!label && !annotation) return null;
+      return {
+        label,
+        annotation,
+        isSegment: typeof entry.isSegment === "boolean" ? entry.isSegment : undefined,
+        parentId: typeof entry.parentId === "string" || entry.parentId === null
+          ? entry.parentId
+          : undefined,
+      };
+    })
+    .filter((entry): entry is AnnotationRecord => entry !== null);
 }
 
 /** Apply erase mask to a bitmap and return a PNG blob.

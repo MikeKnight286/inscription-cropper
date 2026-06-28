@@ -11,6 +11,7 @@ import {
   fileToAnnotationImage,
   segmentBitmap,
   exportAnnotationsJson,
+  readAnnotationRecords,
   applyMaskToBlob,
 } from "@/lib/annotate";
 import type { EraseCircle, SourcePage } from "@/types";
@@ -49,10 +50,13 @@ function toCropRect(img: AnnotationImage) {
 
 export default function AnnotatePage() {
   const [images, setImages] = useState<AnnotationImage[]>([]);
+  const [annotationCounts, setAnnotationCounts] = useState<Map<string, number>>(new Map());
+  const [uploadedAnnotationFiles, setUploadedAnnotationFiles] = useState<string[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [eraseId, setEraseId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const folderInputRef = useRef<HTMLInputElement>(null);
+  const annotationsInputRef = useRef<HTMLInputElement>(null);
 
   const selectedImage = images.find(img => img.id === selectedId) ?? null;
   const eraseImage    = images.find(img => img.id === eraseId)    ?? null;
@@ -67,6 +71,33 @@ export default function AnnotatePage() {
     if (!selectedId && loaded.length > 0) setSelectedId(loaded[0].id);
   }
 
+  async function handleAnnotationsInput(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(e.target.files ?? []).filter(file =>
+      file.type === "application/json" || file.name.toLowerCase().endsWith(".json")
+    );
+    e.target.value = "";
+    if (files.length === 0) return;
+
+    try {
+      const counts = new Map<string, number>();
+      const uploadedNames: string[] = [];
+      for (const file of files) {
+        const records = await readAnnotationRecords(file);
+        uploadedNames.push(file.name);
+        for (const record of records) {
+          const key = record.annotation.trim();
+          if (!key) continue;
+          counts.set(key, (counts.get(key) ?? 0) + 1);
+        }
+      }
+      setAnnotationCounts(counts);
+      setUploadedAnnotationFiles(uploadedNames);
+    } catch {
+      setAnnotationCounts(new Map());
+      setUploadedAnnotationFiles([]);
+    }
+  }
+
   function handleFileInput(e: React.ChangeEvent<HTMLInputElement>) {
     if (e.target.files) loadFiles(e.target.files);
     e.target.value = "";
@@ -76,6 +107,10 @@ export default function AnnotatePage() {
     e.preventDefault();
     if (e.dataTransfer.files) loadFiles(e.dataTransfer.files);
   }
+
+  const selectedAnnotationCount = selectedImage
+    ? (annotationCounts.get(selectedImage.annotation.trim()) ?? 0)
+    : 0;
 
   // ── List operations ───────────────────────────────────────────────────────
 
@@ -177,15 +212,16 @@ export default function AnnotatePage() {
   }
 
   async function handleExportZip() {
-    if (images.length === 0) return;
+    const exportedImages = images.filter(img => img.annotation.trim().length > 0);
+    if (exportedImages.length === 0) return;
     const zip = new JSZip();
-    for (let i = 0; i < images.length; i++) {
-      const img = images[i];
+    for (let i = 0; i < exportedImages.length; i++) {
+      const img = exportedImages[i];
       const blob = await applyMaskToBlob(img);
       const safe = img.label.replace(/[^a-zA-Z0-9_\-]/g, "_");
       zip.file(`${String(i + 1).padStart(3, "0")}_${safe}.png`, blob);
     }
-    const jsonBlob = exportAnnotationsJson(images);
+    const jsonBlob = exportAnnotationsJson(exportedImages);
     zip.file("annotations.json", jsonBlob);
     const out = await zip.generateAsync({ type: "blob" });
     const ts = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
@@ -216,6 +252,21 @@ export default function AnnotatePage() {
           <button className="an-btn" onClick={() => folderInputRef.current?.click()}>
             + folder
           </button>
+          <div className="an-json-upload" title={uploadedAnnotationFiles.length > 0 ? uploadedAnnotationFiles.join("\n") : "Upload one or more annotations.json files"}>
+            <button className="an-btn" onClick={() => annotationsInputRef.current?.click()}>
+              + annotations
+            </button>
+            {uploadedAnnotationFiles.length > 0 && (
+              <div className="an-json-upload-popover" aria-label="Uploaded annotation files">
+                <div className="an-json-upload-title">uploaded json</div>
+                <ul className="an-json-upload-list">
+                  {uploadedAnnotationFiles.map(name => (
+                    <li key={name} className="an-json-upload-item">{name}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
           <button
             className="an-btn"
             onClick={handleExportJson}
@@ -249,6 +300,14 @@ export default function AnnotatePage() {
           style={{ display: "none" }}
           onChange={handleFileInput}
         />
+        <input
+          ref={annotationsInputRef}
+          type="file"
+          accept="application/json,.json"
+          multiple
+          style={{ display: "none" }}
+          onChange={handleAnnotationsInput}
+        />
       </header>
 
       <div className="an-body">
@@ -263,6 +322,7 @@ export default function AnnotatePage() {
             onSelect={setSelectedId}
             onDelete={handleDelete}
             onReorder={handleReorder}
+            annotationCounts={annotationCounts}
           />
         </aside>
 
@@ -286,6 +346,7 @@ export default function AnnotatePage() {
           <AnnotationPanel
             image={selectedImage}
             onChange={handleAnnotationChange}
+            annotationCount={selectedAnnotationCount}
           />
           <ReviewPanel
             images={images}
