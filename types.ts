@@ -33,6 +33,7 @@ export interface CropRect {
    *  Coords are always relative to the source bitmap's ORIGINAL orientation. */
   pageRotationAtCreation: number;
   label: string;
+  annotation: string;
   thumbUrl: string;
   /** Eraser strokes in crop-local upright pixel space.
    *  Applied after crop rendering; each entry blacks out a circle. */

@@ -316,11 +316,8 @@ input:focus, select:focus { border-color: var(--accent); }
   overflow-y: auto;
 }
 .crop-item {
-  display: grid;
-  grid-template-columns: 30px 60px 1fr auto;
-  gap: 10px;
-  align-items: center;
-  padding: 8px 14px;
+  display: flex;
+  flex-direction: column;
   border-bottom: 1px solid var(--line-soft);
   cursor: pointer;
   transition: background 100ms;
@@ -329,8 +326,15 @@ input:focus, select:focus { border-color: var(--accent); }
 .crop-item.selected {
   background: rgba(244, 162, 97, 0.08);
   border-left: 2px solid var(--accent-hot);
-  padding-left: 12px;
 }
+.crop-item-row {
+  display: grid;
+  grid-template-columns: 30px 60px 1fr auto;
+  gap: 10px;
+  align-items: center;
+  padding: 8px 14px;
+}
+.crop-item.selected .crop-item-row { padding-left: 12px; }
 .crop-index {
   font-size: 10px;
   color: var(--fg-faint);
@@ -391,6 +395,92 @@ input:focus, select:focus { border-color: var(--accent); }
 .crop-actions .crop-delete:hover:not(:disabled) {
   border-color: var(--accent-hot);
   color: var(--accent-hot);
+}
+
+/* ── Inline annotation panel (in CropList) ────────────────────────────── */
+.crop-annot-section {
+  border-top: 1px solid var(--line-soft);
+  display: flex;
+  flex-direction: column;
+}
+
+.crop-annot-preview {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 14px;
+  background: #0d0c0a;
+  border-bottom: 1px solid var(--line-soft);
+  min-height: 32px;
+}
+
+.crop-annot-rendered {
+  font-family: "Noto Sans Myanmar", "Pyidaungsu", serif;
+  font-size: 16px;
+  color: var(--fg);
+  line-height: 1.4;
+}
+
+.crop-annot-empty {
+  font-size: 11px;
+  color: var(--fg-faint);
+  font-style: italic;
+  font-family: var(--display);
+}
+
+.crop-annot-controls {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.crop-annot-kbd-toggle {
+  font-size: 12px;
+  font-family: "Noto Sans Myanmar", "Pyidaungsu", serif;
+  padding: 2px 7px;
+  border-color: var(--line);
+  color: var(--fg-faint);
+}
+
+.crop-annot-kbd-toggle.active {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: rgba(233, 196, 106, 0.08);
+}
+
+.crop-annot-clear {
+  font-size: 10px;
+  padding: 2px 7px;
+  letter-spacing: 0.04em;
+  border-color: var(--line);
+  color: var(--fg-faint);
+}
+
+.crop-annot-clear:hover {
+  color: var(--accent-hot);
+  border-color: var(--accent-hot);
+}
+
+.crop-annot-hex-display {
+  min-height: 32px;
+  max-height: 64px;
+  overflow-y: auto;
+  padding: 6px 14px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  align-content: flex-start;
+  background: var(--bg-canvas);
+}
+
+/* Small rendered annotation shown in crop-dims when not selected */
+.crop-annot-badge {
+  font-family: "Noto Sans Myanmar", "Pyidaungsu", serif;
+  font-size: 12px;
+  color: var(--accent-cool);
+  margin-left: 4px;
 }
 
 /* ── Page controls ─────────────────────────────────────────────────────── */

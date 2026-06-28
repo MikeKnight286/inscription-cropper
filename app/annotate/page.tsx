@@ -41,6 +41,7 @@ function toCropRect(img: AnnotationImage) {
     angle: 0,
     pageRotationAtCreation: 0,
     label: img.label,
+    annotation: img.annotation,
     thumbUrl: img.objectUrl,
     eraseMask: img.eraseMask,
   };

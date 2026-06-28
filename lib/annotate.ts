@@ -126,6 +126,17 @@ export async function segmentBitmap(
   return segments;
 }
 
+/** Normalize a blob image to SEGMENT_SIZE × SEGMENT_SIZE using contain-fit
+ *  with a black background, matching the segment export format. */
+export async function normalizeToSquare(blob: Blob): Promise<Blob> {
+  const bm = await createImageBitmap(blob);
+  const canvas = renderSegmentCanvas(bm, 0, bm.width);
+  bm.close();
+  return new Promise((res, rej) =>
+    canvas.toBlob(b => b ? res(b) : rej(new Error("toBlob failed")), "image/png")
+  );
+}
+
 /** Export annotations as a JSON blob. */
 export function exportAnnotationsJson(images: AnnotationImage[]): Blob {
   const data = images.map(img => ({

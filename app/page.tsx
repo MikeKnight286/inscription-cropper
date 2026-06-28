@@ -101,6 +101,7 @@ export default function Home() {
         angle: rect.angle,
         pageRotationAtCreation: currentPage.pageRotationRad,
         label,
+        annotation: "",
         thumbUrl,
         eraseMask: [],
       };
@@ -133,6 +134,10 @@ export default function Home() {
 
   const handleRename = useCallback((id: string, label: string) => {
     setCrops(prev => prev.map(c => c.id === id ? { ...c, label } : c));
+  }, []);
+
+  const handleAnnotationChange = useCallback((id: string, hex: string) => {
+    setCrops(prev => prev.map(c => c.id === id ? { ...c, annotation: hex } : c));
   }, []);
 
   const handleDelete = useCallback((id: string) => {
@@ -296,6 +301,7 @@ export default function Home() {
                 onDelete={handleDelete}
                 onMove={handleMove}
                 onEdit={setEditingId}
+                onAnnotate={handleAnnotationChange}
               />
               <div className="side-footer">
                 <FileUploader onLoad={handleLoad} />

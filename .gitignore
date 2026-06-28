@@ -100,3 +100,6 @@ dist/
 tmp/
 temp/
 data/
+.agents/
+skills-lock.json
+
